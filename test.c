@@ -5,118 +5,138 @@
 #include <math.h>
 static void finish(int sig);
 
-void ball(float *ball_x, float *ball_y, float *ball_vel_x, float *ball_vel_y)
+typedef struct 
+{
+    float pos_x;
+    float pos_y;
+
+    float vel_x;
+    float vel_y;
+} Ball;
+
+typedef struct {
+    float pos_x;
+    float pos_y;
+
+    float height;
+
+} Paddle;
+
+void update_ball(Ball *  ball)
 {
     // deleting the last draw of the ball
-    mvaddch(*ball_y, *ball_x, ' ');
+    mvaddch(ball -> pos_y, ball -> pos_x , ' ');
 
     // ball speed
-
-    *ball_x += *ball_vel_x;
-    *ball_y += *ball_vel_y;
+    ball -> pos_x += ball -> vel_x;
+    ball -> pos_y += ball -> vel_y;
 
     // collision with borders
-    if (*ball_x <= 0 || *ball_x >= COLS - 1)
+    bool collision_x = ball -> pos_x <= 0 || ball -> pos_x >= COLS - 1;
+    bool collision_y = ball -> pos_y <= 0 || ball -> pos_y >= LINES - 1;
+
+    if (collision_x)
     {
-        *ball_vel_x *= -1;
-        *ball_x = (COLS / 2) - 1;
-        *ball_y = LINES / 2;
+        ball -> vel_x *= -1;
     }
 
-    if (*ball_y <= 0 || *ball_y >= LINES - 1)
+    if (collision_y)
     {
-        *ball_vel_y *= -1;
+        ball -> vel_y *= -1;
     }
-
     // drawing ball in the new position
-    mvaddch(*ball_y, *ball_x, 'O');
+    mvaddch(ball -> pos_y, ball -> pos_x , 'O');
 }
 
-void paddle_collision(float *ball_x, float *ball_y, float *ball_vel_x, float *paddle_x, float *paddle_y, float *paddle_height)
+void paddle_collision(Paddle * paddle, Ball * ball)
 {
-    bool collision_x = fabsf(*ball_x - *paddle_x) <= 1.0f ;
-    bool collision_y = (*paddle_y <= *ball_y) && (*paddle_y + *paddle_height >= *ball_y);
+    bool collision_x = fabsf(ball -> pos_x - paddle -> pos_x) <= 1.5f ;
+    bool collision_y = (paddle -> pos_y <= ball -> pos_y) && (paddle -> pos_y + paddle -> height >= ball -> pos_y);
 
     if(collision_x && collision_y){
-        *ball_vel_x *= - 1;
+        beep();
+        ball -> vel_x *= - 1;
     }
 }
 
-void paddle(float *paddle_height, float *paddle_x, float *paddle_y)
+void paddle(Paddle * paddle)
 {
     // Delete
-    for (int i = 0; i < *paddle_height; i++)
+    for (int i = 0; i < paddle -> height; i++)
     {
-        mvaddch(*paddle_y + i, *paddle_x, ' ');
+        mvaddch(paddle -> pos_y + i, paddle -> pos_x, ' ');
     }
 
     // Draw paddle
-    for (int i = 0; i < *paddle_height; i++)
+    for (int i = 0; i < paddle -> height; i++)
     {
-        mvaddch(*paddle_y + i, *paddle_x, '#');
+        mvaddch(paddle -> pos_y + i, paddle -> pos_x, '#');
     }
 }
 
-void controller(float *paddle_x, float *paddle_y, float *paddle_height, float *paddle2_x, float *paddle2_y, float *paddle2_height)
+void controller(Paddle * player_1, Paddle * player_2)
 {
     int key = getch();
 
     switch (key)
     {
-    // paddle 1
+    // player 1
     case 'w':
-        for (int i = 0; i < *paddle_height; i++)
+        for (int i = 0; i < player_1 -> height; i++)
         {
-            mvaddch(*paddle_y + i, *paddle_x, ' ');
+            mvaddch(player_1 -> pos_y + i, player_1 -> pos_x, ' ');
         }
 
-        if (*paddle_y > 0)
-            (*paddle_y)--;
+        if (player_1 -> pos_y > 0)
+            player_1 -> pos_y = player_1 -> pos_y - 2.5;
 
-        for (int i = 0; i < *paddle_height; i++)
+        for (int i = 0; i < player_1 -> height; i++)
         {
-            mvaddch(*paddle_y + i, *paddle_x, '#');
+            mvaddch(player_1 -> pos_y + i, player_1 -> pos_x, '#');
         }
         break;
     case 's':
-        for (int i = 0; i < *paddle_height; i++)
+        for (int i = 0; i < player_1 -> height; i++)
         {
-            mvaddch(*paddle_y + i, *paddle_x, ' ');
+            mvaddch(player_1 -> pos_y + i, player_1 -> pos_x, ' ');
         }
 
-        if (*paddle_y + *paddle_height < LINES)
-            (*paddle_y)++;
+        if (player_1 -> pos_y + player_1 -> height < LINES)
+            player_1 -> pos_y =  player_1 -> pos_y + 2.5;
 
-        for (int i = 0; i < *paddle_height; i++)
+        for (int i = 0; i < player_1 -> height; i++)
         {
-            mvaddch(*paddle_y + i, *paddle_x, '#');
+            mvaddch(player_1 -> pos_y + i, player_1 -> pos_x, '#');
         }
         break;
 
     case KEY_UP:
-        for (int i = 0; i < *paddle2_height; i++)
+        for (int i = 0; i < player_2 -> height; i++)
         {
-            mvaddch(*paddle2_y + i, *paddle2_x, ' ');
+            mvaddch(player_2 -> pos_y + i, player_2 -> pos_x, ' ');
         }
-        if (*paddle2_y > 0)
-            (*paddle2_y)--;
-        for (int i = 0; i < *paddle2_height; i++)
+
+        if (player_2 -> pos_y > 0)
+            player_2 -> pos_y = player_2 -> pos_y - 2.5;
+
+        for (int i = 0; i < player_2 -> height; i++)
         {
-            mvaddch(*paddle2_y + i, *paddle2_x, '#');
+            mvaddch(player_2 -> pos_y + i, player_2 -> pos_x, '#');
         }
         break;
     case KEY_DOWN:
-        for (int i = 0; i < *paddle2_height; i++)
+        for (int i = 0; i < player_2 -> height; i++)
         {
-            mvaddch(*paddle2_y + i, *paddle2_x, ' ');
-        }
-        if (*paddle2_y + *paddle2_height < LINES)
-            (*paddle2_y)++;
-        for (int i = 0; i < *paddle2_height; i++)
-        {
-            mvaddch(*paddle2_y + i, *paddle2_x, '#');
+            mvaddch(player_2 -> pos_y + i, player_2 -> pos_x, ' ');
         }
 
+        if (player_2 -> pos_y + player_2 -> height < LINES)
+            player_2 -> pos_y =  player_2 -> pos_y + 2.5;
+
+        for (int i = 0; i < player_2 -> height; i++)
+        {
+            mvaddch(player_2 -> pos_y + i, player_2 -> pos_x, '#');
+        }
         break;
     }
 }
@@ -140,34 +160,36 @@ int main()
     float ball_y = 0;
     float ball_x = COLS / 8;
 
-    // ball velocity
-    float ball_vel_x = 1.0;
-    float ball_vel_y = 0.8;
+    Ball ball;
 
-    // PADDLE VARIABLES
-    // paddle height
-    float paddle_height = 4;
+    ball.pos_x = COLS / 8;
+    ball.pos_y = 0; 
 
-    // paddle position
-    float paddle_x = (COLS / 2) - (COLS / 2) + 10;
-    float paddle_y = 0;
+    ball.vel_x = 1.0;
+    ball.vel_y = 0.5;
 
-    float paddle2_x = (COLS / 2) + (COLS / 2) - 10;
-    float paddle2_y = 0;
+    // PADDLE 
+    Paddle player_1;
+    player_1.pos_x = (COLS / 2) - (COLS / 2) + 10;
+    player_1.pos_y = 0;
+    player_1.height = 4;
 
-    float paddle2_height = 4;
+    Paddle player_2;
+    player_2.pos_x = (COLS / 2) + (COLS / 2) - 10;
+    player_2.pos_y = 0;
+    player_2.height = 4;
 
     for (;;)
     {
-        ball(&ball_x, &ball_y, &ball_vel_x, &ball_vel_y);
-        paddle_collision(&ball_x, &ball_y, &ball_vel_x, &paddle_x, &paddle_y, &paddle_height);
-        paddle_collision(&ball_x, &ball_y, &ball_vel_x, &paddle2_x, &paddle2_y, &paddle2_height);
-        controller(&paddle_x, &paddle_y, &paddle_height, &paddle2_x, &paddle2_y, &paddle2_height);
-        paddle(&paddle_height, &paddle_x, &paddle_y);
-        paddle(&paddle2_height, &paddle2_x, &paddle2_y);
+        update_ball(&ball);
+        paddle_collision(&player_1, &ball);
+        paddle_collision(&player_2, &ball);
+        controller(&player_1, &player_2);
+        paddle(&player_1);
+        paddle(&player_2);
 
         refresh();
-        usleep(33000);
+        usleep(15000);
     }
 
     finish(0);
