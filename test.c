@@ -23,12 +23,13 @@ typedef struct {
     Vector velocity;
 
     int height;
+    int score;
 } Paddle;
 
 void ball_movement(Ball *ball) {
     // deleting the last draw of the ball
-    mvaddch(ball->position.y, ball->position.x, ' ');
-
+     mvaddch(ball->position.y, ball->position.x, ' ');
+     
     // ball speed
     ball->position.x += ball-> velocity.x;
     ball-> position.y += ball-> velocity.y;
@@ -43,7 +44,6 @@ void ball_movement(Ball *ball) {
 
     if (collision_y) {
 	ball->velocity.y *= -1;
-
     }
 
     mvaddch(ball->position.y, ball->position.x, 'O');
@@ -89,7 +89,7 @@ void move_player_down(Paddle *player) {
 	mvaddch(player-> position.y + i, player -> position.x, ' ');
     }
 
-    if (player -> position.y + player -> height < LINES - 2)
+    if (player -> position.y + player -> height < LINES - 1)
 	player -> position.y = player -> position.y + 2.5;
 
     for (int i = 0; i < player -> height; i++) {
@@ -99,12 +99,6 @@ void move_player_down(Paddle *player) {
 }
 void controller(Paddle *player_1, Paddle *player_2) {
     int key = getch();
-    int start_x, start_y, height, withd;
-
-    height = 30;
-    withd = 90;
-    start_x = (COLS - withd)/2;
-    start_y = (LINES - height)/2;
 
     switch (key) {
 	// player 1
@@ -124,21 +118,18 @@ void controller(Paddle *player_1, Paddle *player_2) {
     }
 }
 
-void draw_area() {
-    int start_y, start_x, withd, height;
+void show_score(Paddle * player_1, Paddle * player_2){
+     int score_1 = player_1 -> score;
+     int score_2 = player_2 -> score;
 
-    height = LINES - 10;
-    withd = COLS - 20;
-    start_x = (COLS - withd)/2;
-    start_y = (LINES - height)/2;
-
-    WINDOW *win = newwin(height, withd, start_y, start_x);
-
-    box(win, '*', '*');
-    touchwin(win);
-    wrefresh(win);
+     mvprintw(0, 10, "player_1: %d",score_1);
+     mvprintw(0, COLS - 20, "player_2: %d",score_2);
 }
-
+void center_line() {
+    for(int i = 0; i < LINES; i ++){
+	mvprintw(LINES - i, COLS/2,"|");
+    }
+}
 int main() {
     initscr();
 
@@ -159,31 +150,33 @@ int main() {
     ball.position.y = 0;
 
     ball.velocity.x = 1.0;
-    ball.velocity.y = 0.5;
+    ball.velocity.y = 0.4;
 
     // PADDLE
     Paddle player_1;
     player_1.position.x = 10;
     player_1.position.y = 20;
-    player_1.height = 5;
+    player_1.height = 6;
+    player_1.score = 0;
 
     Paddle player_2;
     player_2.position.x = COLS - 10;
     player_2.position.y = 20;
-    player_2.height = 5;
+    player_2.height = 6;
+    player_2.score = 0;
 
     draw_paddle(&player_1);
     draw_paddle(&player_2);
     for (;;) {
-	//draw_area();
+
+	center_line();
 	controller(&player_1, &player_2);
 	draw_paddle(&player_1);
 	draw_paddle(&player_2);
 	ball_movement(&ball);
 	ball_collision_paddle(&player_1, &ball);
 	ball_collision_paddle(&player_2, &ball);
-	// paddle_collision(&player_2, &ball);
-
+	show_score(&player_1, &player_2);
 	refresh();
 	usleep(15000);
     }
